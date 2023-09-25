@@ -1,25 +1,24 @@
 from typing import Dict, Union
-
 from dbt.adapters.base import PythonJobHelper
 from google.api_core.future.polling import POLLING_PREDICATE
-
 from dbt.adapters.bigquery import BigQueryConnectionManager, BigQueryCredentials
 from dbt.adapters.bigquery.connections import DataprocBatchConfig
 from google.api_core import retry
 from google.api_core.client_options import ClientOptions
 from google.cloud import storage, dataproc_v1  # type: ignore
 from google.protobuf.json_format import ParseDict
+from datetime import datetime
+import random
 
-OPERATION_RETRY_TIME = 10
-
+OPERATION_RETRY_TIME = 10	
 
 class BaseDataProcHelper(PythonJobHelper):
     def __init__(self, parsed_model: Dict, credential: BigQueryCredentials) -> None:
         """_summary_
-
         Args:
             credential (_type_): _description_
         """
+        
         # validate all additional stuff for python is set
         schema = parsed_model["schema"]
         identifier = parsed_model["alias"]
@@ -33,14 +32,17 @@ class BaseDataProcHelper(PythonJobHelper):
                 raise ValueError(
                     f"Need to supply {required_config} in profile to submit python job"
                 )
-        self.model_file_name = f"{schema}/{identifier}.py"
+        
+        date_company_group = self.parsed_model["config"].get("date_company_group", "other")
+        self.labels = {"model": identifier, "partition": date_company_group}
+        random_num = str(random.randrange(1000, 9999))
+        self.model_file_name = f"{schema}/{date_company_group}/{identifier}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{random_num}.py"
         self.credential = credential
         self.GoogleCredentials = BigQueryConnectionManager.get_credentials(credential)
-        self.storage_client = storage.Client(
+         self.storage_client = storage.Client(
             project=self.credential.execution_project, credentials=self.GoogleCredentials
         )
         self.gcs_location = "gs://{}/{}".format(self.credential.gcs_bucket, self.model_file_name)
-
         # set retry policy, default to timeout after 24 hours
         self.timeout = self.parsed_model["config"].get(
             "timeout", self.credential.job_execution_timeout_seconds or 60 * 60 * 24
@@ -52,23 +54,19 @@ class BaseDataProcHelper(PythonJobHelper):
             api_endpoint="{}-dataproc.googleapis.com:443".format(self.credential.dataproc_region)
         )
         self.job_client = self._get_job_client()
-
     def _upload_to_gcs(self, filename: str, compiled_code: str) -> None:
         bucket = self.storage_client.get_bucket(self.credential.gcs_bucket)
         blob = bucket.blob(filename)
         blob.upload_from_string(compiled_code)
-
     def submit(self, compiled_code: str) -> dataproc_v1.types.jobs.Job:
         # upload python file to GCS
         self._upload_to_gcs(self.model_file_name, compiled_code)
         # submit dataproc job
         return self._submit_dataproc_job()
-
     def _get_job_client(
         self,
     ) -> Union[dataproc_v1.JobControllerClient, dataproc_v1.BatchControllerClient]:
         raise NotImplementedError("_get_job_client not implemented")
-
     def _submit_dataproc_job(self) -> dataproc_v1.types.jobs.Job:
         raise NotImplementedError("_submit_dataproc_job not implemented")
 
@@ -82,15 +80,14 @@ class ClusterDataprocHelper(BaseDataProcHelper):
         return dataproc_v1.JobControllerClient(  # type: ignore
             client_options=self.client_options, credentials=self.GoogleCredentials
         )
-
     def _get_cluster_name(self) -> str:
         return self.parsed_model["config"].get(
             "dataproc_cluster_name", self.credential.dataproc_cluster_name
         )
-
     def _submit_dataproc_job(self) -> dataproc_v1.types.jobs.Job:
         job = {
             "placement": {"cluster_name": self._get_cluster_name()},
+            "labels": self.labels,
             "pyspark_job": {
                 "main_python_file_uri": self.gcs_location,
             },
@@ -114,11 +111,9 @@ class ServerlessDataProcHelper(BaseDataProcHelper):
         return dataproc_v1.BatchControllerClient(
             client_options=self.client_options, credentials=self.GoogleCredentials
         )
-
     def _submit_dataproc_job(self) -> dataproc_v1.types.jobs.Job:
         batch = self._configure_batch()
         parent = f"projects/{self.credential.execution_project}/locations/{self.credential.dataproc_region}"
-
         request = dataproc_v1.CreateBatchRequest(
             parent=parent,
             batch=batch,
@@ -139,7 +134,6 @@ class ServerlessDataProcHelper(BaseDataProcHelper):
         #     .blob(f"{matches.group(2)}.000000000")
         #     .download_as_string()
         # )
-
     def _configure_batch(self):
         # create the Dataproc Serverless job config
         # need to pin dataproc version to 1.1 as it now defaults to 2.0
@@ -162,12 +156,10 @@ class ServerlessDataProcHelper(BaseDataProcHelper):
             "gs://spark-lib/bigquery/spark-bigquery-with-dependencies_2.12-0.21.1.jar",
         )
         batch.pyspark_batch.jar_file_uris = [jar_file_uri]
-
         # Apply configuration from dataproc_batch key, possibly overriding defaults.
         if self.credential.dataproc_batch:
             self._update_batch_from_config(self.credential.dataproc_batch, batch)
         return batch
-
     @classmethod
     def _update_batch_from_config(
         cls, config_dict: Union[Dict, DataprocBatchConfig], target: dataproc_v1.Batch
