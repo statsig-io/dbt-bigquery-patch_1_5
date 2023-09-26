@@ -39,7 +39,7 @@ class BaseDataProcHelper(PythonJobHelper):
         self.model_file_name = f"{schema}/{date_company_group}/{identifier}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{random_num}.py"
         self.credential = credential
         self.GoogleCredentials = BigQueryConnectionManager.get_credentials(credential)
-         self.storage_client = storage.Client(
+        self.storage_client = storage.Client(
             project=self.credential.execution_project, credentials=self.GoogleCredentials
         )
         self.gcs_location = "gs://{}/{}".format(self.credential.gcs_bucket, self.model_file_name)
