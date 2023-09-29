@@ -147,11 +147,15 @@
         strategy, tmp_relation, target_relation, compiled_code, unique_key, partition_by, partitions, dest_columns, tmp_relation_exists, partition_by.copy_partitions, incremental_predicates
     ) %}
 
-    {%- if language != 'python' -%}
-      {%- call statement('main') -%}
+    
+    {%- call statement('main') -%}
+      {%- if language != 'python' -%}
         {{ build_sql }}
-      {% endcall %}
-    {% endif %}
+      {% else %}
+        select 0
+      {% endif %}
+    {% endcall %}
+    
 
     {# {%- if language == 'python' and tmp_relation and drop_temp_table is true -%}
       {{ adapter.drop_relation(tmp_relation) }}
