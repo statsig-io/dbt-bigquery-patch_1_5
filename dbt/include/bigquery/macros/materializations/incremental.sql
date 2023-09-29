@@ -77,7 +77,7 @@
   {%- set partition_by = adapter.parse_partition_by(raw_partition_by) -%}
   {%- set partitions = config.get('partitions', none) -%}
   {%- set cluster_by = config.get('cluster_by', none) -%}
-  {%- set drop_temp_table = config.get('drop_temp_table', true) -%}
+  {# {%- set drop_temp_table = config.get('drop_temp_table', true) -%} #}
 
   {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
   {% set incremental_predicates = config.get('predicates', default=none) or config.get('incremental_predicates', default=none) %}
@@ -125,7 +125,7 @@
     {%- endif -%}
 
     {% set tmp_relation_exists = false %}
-    {% if on_schema_change != 'ignore' or language == 'python' %}
+    {% if on_schema_change != 'ignore' %}
       {#-- Check first, since otherwise we may not build a temp table --#}
       {#-- Python always needs to create a temp table --#}
       {%- call statement('create_tmp_relation', language=language) -%}
@@ -152,9 +152,9 @@
       {{ build_sql }}
     {% endcall %}
 
-    {%- if language == 'python' and tmp_relation and drop_temp_table is true -%}
+    {# {%- if language == 'python' and tmp_relation and drop_temp_table is true -%}
       {{ adapter.drop_relation(tmp_relation) }}
-    {%- endif -%}
+    {%- endif -%} #}
 
   {% endif %}
 
