@@ -77,7 +77,6 @@
   {%- set partition_by = adapter.parse_partition_by(raw_partition_by) -%}
   {%- set partitions = config.get('partitions', none) -%}
   {%- set cluster_by = config.get('cluster_by', none) -%}
-  {%- set drop_temp_table = config.get('drop_temp_table', true) -%}
 
   {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
   {% set incremental_predicates = config.get('predicates', default=none) or config.get('incremental_predicates', default=none) %}
@@ -148,13 +147,19 @@
         strategy, tmp_relation, target_relation, compiled_code, unique_key, partition_by, partitions, dest_columns, tmp_relation_exists, partition_by.copy_partitions, incremental_predicates
     ) %}
 
+    
     {%- call statement('main') -%}
-      {{ build_sql }}
+      {%- if language != 'python' -%}
+        {{ build_sql }}
+      {% else %}
+        select 0
+      {% endif %}
     {% endcall %}
+    
 
-    {%- if language == 'python' and tmp_relation and drop_temp_table is true -%}
+    {# {%- if language == 'python' and tmp_relation and drop_temp_table is true -%}
       {{ adapter.drop_relation(tmp_relation) }}
-    {%- endif -%}
+    {%- endif -%} #}
 
   {% endif %}
 
