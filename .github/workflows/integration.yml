@@ -68,13 +68,13 @@ jobs:
     steps:
       - name: Check out the repository (non-PR)
         if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           persist-credentials: false
 
       - name: Check out the repository (PR)
         if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
@@ -87,7 +87,7 @@ jobs:
         #  'false' - if none of changed files matches any of filter rules
         # also, returns:
         #  `changes` - JSON array with names of all filters matching any of the changed files
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50 # v2
         id: get-changes
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,7 +98,7 @@ jobs:
               - 'dev-requirements.txt'
       - name: Generate integration test matrix
         id: generate-matrix
-        uses: actions/github-script@v6
+        uses: actions/github-script@00f12e3e20659f42342b1c0226afda7f7c042325 # v6
         env:
           CHANGES: ${{ steps.get-changes.outputs.changes }}
         with:
@@ -141,7 +141,7 @@ jobs:
     steps:
       - name: Check out the repository
         if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           persist-credentials: false
 
@@ -149,13 +149,13 @@ jobs:
       # this is necessary for the `pull_request_target` event
       - name: Check out the repository (PR)
         if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -186,7 +186,7 @@ jobs:
           GCS_BUCKET: dbt-ci
         run: tox -- --ddtrace
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         if: always()
         with:
           name: logs
@@ -198,7 +198,7 @@ jobs:
         run: |
           echo "date=$(date +'%Y-%m-%dT%H_%M_%S')" >> $GITHUB_OUTPUT #no colons allowed for artifacts
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         if: always()
         with:
           name: integration_results_${{ matrix.python-version }}_${{ matrix.os }}_${{ matrix.adapter }}-${{ steps.date.outputs.date }}.csv
@@ -218,7 +218,7 @@ jobs:
           needs.test.result == 'skipped' &&
           github.event_name == 'pull_request_target' &&
           github.event.pull_request.head.repo.full_name != github.repository
-        uses: unsplash/comment-on-pr@master
+        uses: unsplash/comment-on-pr@a9bf050e744c8282dee4bb0dbcf063186d8316c4 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
