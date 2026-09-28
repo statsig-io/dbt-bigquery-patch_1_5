@@ -39,7 +39,7 @@ jobs:
   code-quality:
     name: code-quality
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     steps:
       - name: Check out the repository
@@ -66,7 +66,7 @@ jobs:
   unit:
     name: unit test / python ${{ matrix.python-version }}
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     strategy:
       fail-fast: false
@@ -113,7 +113,7 @@ jobs:
   build:
     name: build packages
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     outputs:
       is_alpha: ${{ steps.check-is-alpha.outputs.is_alpha }}
@@ -168,7 +168,7 @@ jobs:
 
     needs: build
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON('{"ubuntu-latest":"blacksmith-2vcpu-ubuntu-2404","macos-latest":"blacksmith-6vcpu-macos-latest","windows-latest":"blacksmith-2vcpu-windows-2025"}')[matrix.os] }}
 
     strategy:
       fail-fast: false
