@@ -60,7 +60,7 @@ jobs:
       github.event_name != 'pull_request_target' ||
       github.event.pull_request.head.repo.full_name == github.repository ||
       contains(github.event.pull_request.labels.*.name, 'ok to test')
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.result }}
@@ -120,7 +120,7 @@ jobs:
         github.event.pull_request.head.repo.full_name == github.repository ||
         contains(github.event.pull_request.labels.*.name, 'ok to test')
       )
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON('{"ubuntu-latest":"blacksmith-2vcpu-ubuntu-2404","windows-latest":"blacksmith-2vcpu-windows-2025","macos-latest":"blacksmith-6vcpu-macos-latest"}')[matrix.os] }}
 
     needs: test-metadata
 
@@ -205,7 +205,7 @@ jobs:
           path: integration_results.csv
 
   require-label-comment:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     needs: test
 

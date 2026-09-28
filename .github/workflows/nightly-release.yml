@@ -30,7 +30,7 @@ env:
 
 jobs:
   aggregate-release-data:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     outputs:
       commit_sha: ${{ steps.resolve-commit-sha.outputs.release_commit }}
@@ -89,7 +89,7 @@ jobs:
           echo "name=${{ env.RELEASE_BRANCH }}" >> $GITHUB_OUTPUT
 
   log-outputs-aggregate-release-data:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     needs: [aggregate-release-data]
 
     steps:
